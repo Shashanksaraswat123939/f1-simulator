@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>F1 Simulator</title>
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="F1 Simulator" />
+    <style>
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; overscroll-behavior: none; touch-action: none; -webkit-user-select: none; user-select: none; }
+      #app { position: fixed; inset: 0; }
+      #game-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      #ui-root { position: absolute; inset: 0; pointer-events: none; }
+      #ui-root > * { pointer-events: auto; }
+    </style>
+    <script type="module" crossorigin src="./assets/index-CX9xc2Yf.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game-canvas"></canvas>
+      <div id="ui-root"></div>
+    </div>
+    <button id="fs-toggle" type="button" style="position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:9999;padding:4px 10px;background:rgba(0,0,0,.55);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15);border-radius:4px;font:600 10px system-ui;letter-spacing:.14em;display:none">FULLSCREEN</button>
+    <script>
+      (function () {
+        var b = document.getElementById('fs-toggle');
+        if (!document.documentElement.requestFullscreen || !document.fullscreenEnabled) return;
+        b.style.display = 'block';
+        b.addEventListener('click', function () {
+          if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(function () {});
+        });
+        document.addEventListener('fullscreenchange', function () { b.textContent = document.fullscreenElement ? 'EXIT FULLSCREEN' : 'FULLSCREEN'; });
+      })();
+    </script>
+  </body>
+</html>

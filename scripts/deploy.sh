@@ -10,6 +10,6 @@ touch "$tmp/.nojekyll"
 cd "$tmp"
 git init -q -b gh-pages
 git add -A
-git commit -q -m "Deploy"
+git -c user.name="Shashank Saraswat" -c user.email="Shashanksaraswat123939@users.noreply.github.com" commit -q -m "Deploy"
 git push -q -f "$remote" gh-pages
 echo "Deployed. Site: https://shashanksaraswat123939.github.io/f1-simulator/"

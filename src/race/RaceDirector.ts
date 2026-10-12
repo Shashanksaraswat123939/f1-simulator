@@ -56,6 +56,9 @@ export class RaceDirector implements IRaceDirector {
   private readonly yellowDouble = [false, false, false];
   private vscTimer = 0;
   private eventLevel = 1;
+  private eventSeed = 1;
+  private neutralSec = -1;
+  private startRng = new Rng(1);
   private neutralCooldown = 60;
   private vscWarned = false;
 
@@ -85,6 +88,10 @@ export class RaceDirector implements IRaceDirector {
     this.neutralCooldown = 60;
     this.isTimeTrial = cfg.mode === 'time-trial';
     this.rng = new Rng((hashString(cfg.circuitId + ':' + cfg.playerDriverId) ^ (Date.now() & 0x7fffffff)) >>> 0);
+    const mpSeed = cfg.mp?.seed;
+    this.startRng = new Rng((((mpSeed ?? Date.now()) ^ 0x5bd1e995) >>> 0));
+    this.eventSeed = mpSeed ?? (Date.now() & 0x7fffffff);
+    this.neutralSec = -1;
     this.gaps = new GapTables(world.track.length);
     this.stepCount = 0;
     this.finishedAt = -1;
@@ -175,7 +182,7 @@ export class RaceDirector implements IRaceDirector {
       results: null,
     };
 
-    this.weather = new WeatherSim(world.env, cfg.weather === 'dynamic', hashString(cfg.circuitId + 'wx') ^ (Date.now() & 0xffff), this.eventLevel);
+    this.weather = new WeatherSim(world.env, cfg.weather === 'dynamic', hashString(cfg.circuitId + 'wx') ^ ((mpSeed ?? Date.now()) & 0xffff), this.eventLevel);
     const playerCar = world.cars[this.playerCarId];
     const voice = playerCar ? VOICE_BY_TEAM[playerCar.teamId] ?? 'warm' : 'warm';
     this.radio = new TeamRadio(this.playerCarId, voice, this.rng);
@@ -365,7 +372,7 @@ export class RaceDirector implements IRaceDirector {
           if (race.lightsOn < 5) {
             race.lightsOn++;
             events.emit('race:lights', { lightsOn: race.lightsOn });
-            this.startTimer = race.lightsOn === 5 ? this.rng.range(TIMING.lightsHoldMin, TIMING.lightsHoldMax) : TIMING.lightsIntervalSeconds;
+            this.startTimer = race.lightsOn === 5 ? this.startRng.range(TIMING.lightsHoldMin, TIMING.lightsHoldMax) : TIMING.lightsIntervalSeconds;
           } else {
             this.lightsOut();
           }
@@ -1109,7 +1116,7 @@ export class RaceDirector implements IRaceDirector {
   private maybeRandomFailure(rec: CarRecord, car: CarState, now: number): void {
     const race = this.state!;
     const sw = this.sw!;
-    if (!sw.config.randomEvents || car.isPlayer || race.phase !== 'racing') return;
+    if (!sw.config.randomEvents || sw.config.mp || car.isPlayer || race.phase !== 'racing') return;
     const e = rec.entry;
     if (e.lapsCompleted < 1 || race.totalLaps - e.lapsCompleted < 1) return;
     const team = sw.teamById[e.teamId];
@@ -1143,26 +1150,35 @@ export class RaceDirector implements IRaceDirector {
     if (this.isRace && onTrack && race.phase === 'racing' && race.totalLaps - race.entries[0].lapsCompleted > 1) this.startVsc('CAR STOPPED ON TRACK', now);
   }
 
-  /** Random VSC, safety car and local yellows, scaled by the session's event frequency. */
+  /**
+   * Random VSC, safety car and local yellows, scaled by the session's event frequency.
+   * Decided once per race-second from a hash of the shared seed, so every online client makes the same call.
+   */
   private maybeRandomNeutralisation(dt: number): void {
     const race = this.state!;
     if (!this.isRace || this.eventLevel <= 0) return;
     if (this.neutralCooldown > 0) this.neutralCooldown -= dt;
-    if (race.phase !== 'racing' || this.neutralCooldown > 0) return;
+    if (race.phase !== 'racing') return;
+    const sec = Math.floor(race.time);
+    if (sec === this.neutralSec) return;
+    this.neutralSec = sec;
+    if (this.neutralCooldown > 0) return;
     const leadLaps = race.entries[0].lapsCompleted;
     if (leadLaps < 1 || race.totalLaps - leadLaps < 2) return;
     const L = this.eventLevel;
-    const pSc = [0, 1 / 1200, 1 / 480, 1 / 200][L] * dt;
-    const pVsc = [0, 1 / 600, 1 / 240, 1 / 100][L] * dt;
-    const pYellow = [0, 1 / 120, 1 / 45, 1 / 20][L] * dt;
-    const r = this.rng.next();
+    const pSc = [0, 1 / 1200, 1 / 480, 1 / 200][L];
+    const pVsc = [0, 1 / 600, 1 / 240, 1 / 100][L];
+    const pYellow = [0, 1 / 120, 1 / 45, 1 / 20][L];
+    const h = (salt: number) => (hashString(`${this.eventSeed}|${sec}|${salt}`) >>> 0) / 4294967296;
+    const pickOf = <T,>(list: T[], u: number): T => list[Math.min(list.length - 1, Math.floor(u * list.length))];
+    const u = h(0);
     const now = race.time;
-    if (r < pSc) {
-      this.startSafetyCar(this.rng.pick(['DEBRIS ON TRACK', 'MAJOR INCIDENT', 'CAR STOPPED ON TRACK']), now);
-    } else if (r < pSc + pVsc) {
-      this.startVsc(this.rng.pick(['DEBRIS ON TRACK', 'CAR STOPPED ON TRACK', 'INCIDENT']), now);
-    } else if (r < pSc + pVsc + pYellow) {
-      const sector = Math.floor(this.rng.next() * 3);
+    if (u < pSc) {
+      this.startSafetyCar(pickOf(['DEBRIS ON TRACK', 'MAJOR INCIDENT', 'CAR STOPPED ON TRACK'], h(1)), now);
+    } else if (u < pSc + pVsc) {
+      this.startVsc(pickOf(['DEBRIS ON TRACK', 'CAR STOPPED ON TRACK', 'INCIDENT'], h(1)), now);
+    } else if (u < pSc + pVsc + pYellow) {
+      const sector = Math.floor(h(2) * 3);
       this.raiseYellow(sector, false, YELLOW_CLEAR_SECONDS);
       this.rc(`YELLOW FLAG — SECTOR ${sector + 1}`, 'flag');
     }

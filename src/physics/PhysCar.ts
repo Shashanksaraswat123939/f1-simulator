@@ -61,6 +61,11 @@ export class PhysCar {
   /** Retired and stopped: permanently ghosted and frozen. */
   parked = false;
   frozen = false;
+  /** Driven by a remote player: not simulated here, pose comes from the network. */
+  remote = false;
+  remoteGear = 1;
+  remoteRpm = 4000;
+  remoteDrs = false;
   slipstream = 0;
   dirtyAir = 0;
   bottomingCooldown = 0;

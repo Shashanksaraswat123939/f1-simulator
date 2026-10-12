@@ -115,6 +115,7 @@ export class MenuScreen implements Screen {
       { label: 'QUICK RACE', sub: MODE_INFO['quick-race'].sub, desc: MODE_INFO['quick-race'].desc, act: () => this.startFlow('quick-race') },
       { label: 'GRAND PRIX WEEKEND', sub: MODE_INFO['grand-prix'].sub, desc: MODE_INFO['grand-prix'].desc, act: () => this.startFlow('grand-prix') },
       { label: 'TIME TRIAL', sub: MODE_INFO['time-trial'].sub, desc: MODE_INFO['time-trial'].desc, act: () => this.startFlow('time-trial') },
+      { label: 'MULTIPLAYER', sub: 'Race friends online · up to 4', desc: 'Create a party code or join one. Everyone drives an identical car, so only driving decides the result.', act: () => this.ctx.emit({ type: 'open-multiplayer' }) },
       { label: 'SETTINGS', sub: 'Graphics · Audio · Camera · Assists', desc: 'Tune quality, volume, camera and driving assists. Saved between sessions.', act: () => this.go('settings'), cls: 'af-mainitem-minor' },
       { label: 'CONTROLS', sub: 'Keyboard & gamepad bindings', desc: 'Every key and button, from throttle to team radio.', act: () => this.go('controls'), cls: 'af-mainitem-minor' },
     ];

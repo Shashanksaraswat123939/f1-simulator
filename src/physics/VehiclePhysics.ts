@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { CAR, GRAVITY, GRID_SIZE, WHEEL_LOCAL_POSITIONS, type TyreCompound } from '../core/constants';
 import { events } from '../core/events';
 import type { TrackProjection, TrackSpline } from '../core/track/TrackSpline';
-import type { Assists, CarEntryConfig, CarState, DriverInput, IVehiclePhysics, World } from '../core/types';
+import type { Assists, CarEntryConfig, CarState, DriverInput, IVehiclePhysics, RemotePose, World } from '../core/types';
 import { copyInput, createEmptyCarState } from '../core/world';
 import { finishCar, makeScratchSample, originOf, prepareCar, substepCar, updateAxes, type SimContext } from './CarSim';
 import { resolveCarPair, resolveWalls } from './Collisions';
@@ -151,8 +151,46 @@ export class VehiclePhysics implements IVehiclePhysics {
     }
     for (let i = 0; i < n; i++) {
       const car = cars[i];
-      if (car) finishCar(car, ctx, dt);
+      if (!car) continue;
+      finishCar(car, ctx, dt);
+      if (car.remote) {
+        car.state.engine.gear = car.remoteGear;
+        car.state.engine.rpm = car.remoteRpm;
+        car.state.drs.open = car.remoteDrs;
+      }
     }
+  }
+
+  setRemote(carId: number): void {
+    const c = this.cars[carId];
+    if (!c) return;
+    c.remote = true;
+    c.ghostTimer = 1e9;
+  }
+
+  applyRemote(carId: number, r: RemotePose, alpha: number): void {
+    const c = this.cars[carId];
+    if (!c || !c.remote) return;
+    const st = c.state;
+    _pos.set(r.p[0], r.p[1], r.p[2]);
+    _quat.set(r.q[0], r.q[1], r.q[2], r.q[3]).normalize();
+    if (alpha >= 1 || st.position.distanceToSquared(_pos) > 100) {
+      st.position.copy(_pos);
+      st.quaternion.copy(_quat);
+    } else {
+      st.position.lerp(_pos, alpha);
+      st.quaternion.slerp(_quat, alpha);
+    }
+    updateAxes(c);
+    c.com.copy(st.position).addScaledVector(c.up, COM_HEIGHT).addScaledVector(c.fwd, COM_Z);
+    st.velocity.set(r.v[0], r.v[1], r.v[2]);
+    c.wheelOmega.fill(st.velocity.dot(c.fwd) / CAR.wheelRadius);
+    st.input.steer = r.steer;
+    st.input.throttle = r.thr;
+    st.input.brake = r.brk;
+    c.remoteGear = r.gear;
+    c.remoteRpm = r.rpm;
+    c.remoteDrs = r.drs > 0;
   }
 
   private emitCollision(a: PhysCar, b: PhysCar, impulse: number): void {

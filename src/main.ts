@@ -37,6 +37,7 @@ import type {
   SessionType,
   TrackDefinition,
   UICommand,
+  RemotePose,
   World,
 } from './core/types';
 
@@ -53,6 +54,8 @@ import { InputSystem } from './input/InputSystem';
 import { CameraSystem } from './camera/CameraSystem';
 import { ReplaySystem } from './replay/ReplaySystem';
 import { VFXSystem } from './vfx/VFXSystem';
+import { Lobby } from './net/Lobby';
+import type { Net, StartPlan } from './net/Net';
 
 const CIRCUITS: TrackDefinition[] = [...CORE_CIRCUITS, ...TRACK_CIRCUITS.filter((c) => !CORE_CIRCUITS.some((k) => k.id === c.id))];
 
@@ -90,6 +93,11 @@ class Game {
   private cockpitView = false;
   private previewDriverId: string = DRIVERS[0].id;
   private readonly playerInput: DriverInput = createDefaultInput();
+  private readonly lobby: Lobby;
+  private net: Net | null = null;
+  /** Online play: remote peer id → car id. */
+  private readonly remoteCars = new Map<string, number>();
+  private readonly remotePose: RemotePose = { p: [0, 0, 0], q: [0, 0, 0, 1], v: [0, 0, 0], steer: 0, thr: 0, brk: 0, gear: 1, rpm: 4000, drs: 0 };
 
   constructor() {
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -103,6 +111,14 @@ class Game {
     this.ui = new UISystem(uiRoot);
     this.ui.setData(TEAMS, DRIVERS, CIRCUITS);
     this.ui.onCommand((cmd) => this.handleUICommand(cmd));
+    this.lobby = new Lobby({
+      circuits: CIRCUITS,
+      drivers: DRIVERS,
+      teams: TEAM_BY_ID,
+      defaultDriverId: this.previewDriverId,
+      onPlan: (plan, net) => void this.startMpSession(plan, net),
+      onGo: () => this.mpGo(),
+    });
 
     const settings = this.ui.getSettings();
     this.render.setQuality(settings.quality);
@@ -124,6 +140,10 @@ class Game {
     events.on('input:gamepad', ({ connected }) => this.ui.setGamepadConnected(connected));
 
     this.enterMenu('title');
+    const params = new URLSearchParams(location.search);
+    const roomParam = params.get('room');
+    if (roomParam) setTimeout(() => this.lobby.open(roomParam), 0);
+    else if (params.get('lobby') === 'host') setTimeout(() => this.lobby.open(undefined, true), 0);
     requestAnimationFrame((t) => this.frame(t));
   }
 
@@ -198,7 +218,10 @@ class Game {
     const player = DRIVER_BY_ID[config.playerDriverId] ?? DRIVERS[0];
     const isTimeTrial = config.mode === 'time-trial';
     const aiCount = isTimeTrial ? 0 : Math.max(0, Math.min(GRID_SIZE - 1, config.aiCount));
-    const others = DRIVERS.filter((d) => d.id !== player.id).slice(0, aiCount);
+    const mp = config.mp;
+    const others = mp
+      ? mp.players.filter((p) => p.peerId !== mp.selfPeerId).map((p) => DRIVER_BY_ID[p.driverId] ?? DRIVERS[1])
+      : DRIVERS.filter((d) => d.id !== player.id).slice(0, aiCount);
     const lineup = [player, ...others];
 
     // Grid order.
@@ -233,7 +256,9 @@ class Game {
       compound: startCompound,
       gridPosition: gridPosOf.get(d.id) ?? i + 1,
     }));
-    this.aiCarIds = entries.filter((e) => !e.isPlayer).map((e) => e.carId);
+    this.aiCarIds = mp ? [] : entries.filter((e) => !e.isPlayer).map((e) => e.carId);
+    this.remoteCars.clear();
+    if (mp) mp.players.filter((p) => p.peerId !== mp.selfPeerId).forEach((p, i) => this.remoteCars.set(p.peerId, i + 1));
 
     // ── Systems
     this.physics = new VehiclePhysics();
@@ -255,6 +280,8 @@ class Game {
     };
     this.liveCars = this.physics.createSession(partial, entries);
     for (const c of this.liveCars) this.physics.setAssists(c.id, c.isPlayer ? config.assists : { ...config.assists, tractionControl: 'off', abs: false, autoGears: true, steeringAssist: false, brakingAssist: false, racingLine: 'off', pitAssist: true, ersAssist: true, drsAssist: true });
+
+    for (const id of this.remoteCars.values()) this.physics.setRemote?.(id);
 
     const worldNoRace: Omit<World, 'race'> = {
       mode: 'live',
@@ -366,6 +393,9 @@ class Game {
   }
 
   private quitToMenu(): void {
+    this.lobby.leave();
+    this.net = null;
+    this.remoteCars.clear();
     this.teardownSession();
     this.enterMenu('menu');
   }
@@ -374,7 +404,7 @@ class Game {
     if (!this.world) return;
     if (paused && this.phase === 'session') {
       this.setPhase('paused');
-      this.world.paused = true;
+      this.world.paused = !this.world.config.mp;
       this.input.setDrivingEnabled(false);
       events.emit('session:pause', { paused: true });
     } else if (!paused && this.phase === 'paused') {
@@ -387,7 +417,7 @@ class Game {
   }
 
   private toggleReplay(): void {
-    if (!this.world || !this.replay) return;
+    if (!this.world || !this.replay || this.world.config.mp) return;
     if (this.phase === 'replay') {
       this.replay.exit();
       this.world.cars = this.liveCars;
@@ -418,8 +448,14 @@ class Game {
       case 'start-session':
         void this.startSession(cmd.config);
         break;
+      case 'open-multiplayer':
+        this.lobby.open();
+        break;
       case 'ready':
-        if (this.phase === 'pre-session' && this.race) {
+        if (this.world?.config.mp && this.net) {
+          this.net.markLoaded();
+          this.lobby.showBanner('READY — WAITING FOR THE OTHER PLAYERS');
+        } else if (this.phase === 'pre-session' && this.race) {
           this.beginDriving();
           this.race.startProcedure();
         }
@@ -431,7 +467,7 @@ class Game {
         this.pause(false);
         break;
       case 'restart-session':
-        if (this.lastConfig) void this.startSession(this.lastConfig);
+        if (this.lastConfig && !this.lastConfig.mp) void this.startSession(this.lastConfig);
         break;
       case 'quit-to-menu':
         this.quitToMenu();
@@ -506,6 +542,7 @@ class Game {
   }
 
   private handleInputCommand(cmd: InputCommand): void {
+    if (this.lobby.isOpen()) return;
     switch (cmd.type) {
       case 'pause':
         if (this.phase === 'session') this.pause(true);
@@ -557,6 +594,98 @@ class Game {
 
   /* ─────────────────────────────── loop ─────────────────────────────── */
 
+  /* ─────────────────────────────── online play ─────────────────────────────── */
+
+  private async startMpSession(plan: StartPlan, net: Net): Promise<void> {
+    // Two players may pick the same driver: later duplicates get the next free driver (same result on every client).
+    const used = new Set<string>();
+    const players = plan.players.map((p) => {
+      let id = DRIVER_BY_ID[p.driverId] ? p.driverId : DRIVERS[0].id;
+      if (used.has(id)) id = (DRIVERS.find((d) => !used.has(d.id) && !plan.players.some((q) => q.driverId === d.id)) ?? DRIVERS.find((d) => !used.has(d.id))!).id;
+      used.add(id);
+      return { peerId: p.peerId, driverId: id };
+    });
+    const me = players.find((p) => p.peerId === net.selfId) ?? players[0];
+    const s = plan.settings;
+    this.net = net;
+    const config: SessionConfig = {
+      mode: 'quick-race',
+      sessionType: 'race',
+      circuitId: s.circuitId,
+      laps: s.laps,
+      playerDriverId: me.driverId,
+      aiDifficulty: 0.5,
+      aiCount: players.length - 1,
+      weather: s.weather,
+      timeOfDay: -1,
+      assists: { ...this.ui.getSettings().assists },
+      startingCompound: 'medium',
+      gridOrder: 'qualifying',
+      gridDriverIds: players.map((p) => p.driverId),
+      randomEvents: s.eventLevel > 0,
+      eventLevel: s.eventLevel,
+      equalCars: true,
+      mp: { seed: plan.seed, selfPeerId: net.selfId, players },
+    };
+    await this.startSession(config);
+  }
+
+  /** The host released the grid: start the lights on every client together. */
+  private mpGo(): void {
+    this.lobby.hideBanner();
+    if (this.phase === 'pre-session' && this.race) {
+      this.beginDriving();
+      this.race.startProcedure();
+    }
+  }
+
+  private applyRemotes(world: World, dt: number): void {
+    const net = this.net;
+    if (!net || !world.config.mp || !this.physics?.applyRemote) return;
+    const now = performance.now();
+    const alpha = 1 - Math.exp(-dt * 14);
+    const out = this.remotePose;
+    for (const [peerId, carId] of this.remoteCars) {
+      const e = net.remote.get(peerId);
+      if (!e) continue;
+      const age = Math.min(0.25, Math.max(0, (now - e.at) / 1000));
+      const r = e.pose;
+      out.p[0] = r.p[0] + r.v[0] * age;
+      out.p[1] = r.p[1] + r.v[1] * age;
+      out.p[2] = r.p[2] + r.v[2] * age;
+      out.q = r.q;
+      out.v = r.v;
+      out.steer = r.steer;
+      out.thr = r.thr;
+      out.brk = r.brk;
+      out.gear = r.gear;
+      out.rpm = r.rpm;
+      out.drs = r.drs;
+      this.physics.applyRemote(carId, out, alpha);
+    }
+  }
+
+  private sendLocalPose(world: World, now: number): void {
+    const net = this.net;
+    if (!net || !world.config.mp) return;
+    const c = this.liveCars[world.playerCarId];
+    if (!c) return;
+    net.sendPose(
+      {
+        p: [c.position.x, c.position.y, c.position.z],
+        q: [c.quaternion.x, c.quaternion.y, c.quaternion.z, c.quaternion.w],
+        v: [c.velocity.x, c.velocity.y, c.velocity.z],
+        steer: c.input.steer,
+        thr: c.input.throttle,
+        brk: c.input.brake,
+        gear: c.engine.gear,
+        rpm: c.engine.rpm,
+        drs: c.drs.open ? 1 : 0,
+      },
+      now,
+    );
+  }
+
   private stepSim(dt: number): void {
     const world = this.world;
     if (!world || !this.physics || !this.ai || !this.race) return;
@@ -589,6 +718,7 @@ class Game {
     this.ai.update(world, dt);
     for (const id of this.aiCarIds) this.physics.setInput(id, this.ai.getInput(id));
 
+    this.applyRemotes(world, dt);
     this.physics.step(world, dt);
     this.race.update(world, dt);
 
@@ -610,7 +740,7 @@ class Game {
     this.input.update(rawDt);
     for (const cmd of this.input.consumeCommands()) this.handleInputCommand(cmd);
 
-    if (world && (this.phase === 'session' || this.phase === 'pre-session' || this.phase === 'results') && !world.paused) {
+    if (world && (this.phase === 'session' || this.phase === 'pre-session' || this.phase === 'results' || (this.phase === 'paused' && world.config.mp)) && !world.paused) {
       // pre-session: cars are held on the grid but physics still runs (engines idle, revving).
       // results: the sim keeps running so the remaining cars finish while the podium cinematic plays.
       this.accumulator += rawDt;
@@ -622,6 +752,7 @@ class Game {
       }
       if (steps === MAX_PHYSICS_STEPS_PER_FRAME) this.accumulator = 0;
       this.replay?.record(world, rawDt);
+      this.sendLocalPose(world, now);
     } else if (world && this.phase === 'replay' && this.replay) {
       this.replay.update(rawDt);
       this.ui.setReplayTime?.(this.replay.getTime(), this.replay.getDuration(), this.replay.getSpeed());

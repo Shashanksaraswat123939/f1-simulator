@@ -165,7 +165,7 @@ export function prepareCar(car: PhysCar, ctx: SimContext, dt: number): void {
   st.collision.impulse = 0;
   if (car.ghostTimer > 0) car.ghostTimer = Math.max(0, car.ghostTimer - dt);
   if (car.bottomingCooldown > 0) car.bottomingCooldown -= dt;
-  car.frozen = st.chassis.held || ctx.phaseFrozen || car.parked;
+  car.frozen = st.chassis.held || ctx.phaseFrozen || car.parked || car.remote;
   car.setMass(st.fuel);
   updateAxes(car);
 
@@ -759,8 +759,10 @@ export function finishCar(car: PhysCar, ctx: SimContext, dt: number): void {
   const eng = st.engine;
 
   if (car.frozen) {
-    v.set(0, 0, 0);
-    st.angularVelocity.set(0, 0, 0);
+    if (!car.remote) {
+      v.set(0, 0, 0);
+      st.angularVelocity.set(0, 0, 0);
+    }
     freeRev(car, dt);
     car.anyContact = true;
     car.minClearance = 1;

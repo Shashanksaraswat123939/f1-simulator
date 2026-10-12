@@ -176,6 +176,21 @@ export interface SessionConfig {
   equalCars?: boolean;
   /** 0 off, 1 normal, 2 frequent, 3 chaos: how often random VSC, safety cars, yellows, failures and rain changes happen. */
   eventLevel?: number;
+  /** Online race: every client shares the seed and the grid order; remote players' cars follow network updates. */
+  mp?: { seed: number; selfPeerId: string; players: { peerId: string; driverId: string }[] };
+}
+
+/** Pose and driver inputs of a remote player's car, as sent over the network. */
+export type RemotePose = {
+  p: number[];
+  q: number[];
+  v: number[];
+  steer: number;
+  thr: number;
+  brk: number;
+  gear: number;
+  rpm: number;
+  drs: number;
 }
 
 export type EntryStatus = 'racing' | 'finished' | 'retired' | 'dnf' | 'dsq';
@@ -627,6 +642,9 @@ export interface IVehiclePhysics extends ICarService {
   createSession(world: Pick<World, 'trackDef' | 'track' | 'teams' | 'drivers' | 'teamById' | 'driverById' | 'config'>, entries: CarEntryConfig[]): CarState[];
   setInput(carId: number, input: DriverInput): void;
   setAssists(carId: number, assists: Assists): void;
+  /** Online play: mark a car as driven by a remote player (it is not simulated here and does not collide). */
+  setRemote?(carId: number): void;
+  applyRemote?(carId: number, pose: RemotePose, alpha: number): void;
   /** Advance all cars by dt (fixed PHYSICS_DT). Reads world.env.weather for grip, world.race.phase for DRS rules. */
   step(world: World, dt: number): void;
   dispose(): void;
@@ -784,6 +802,7 @@ export type UICommand =
   | { type: 'next-session' }
   | { type: 'skip-to-end' }
   | { type: 'ready' } // player pressed "start race" in pre-session
+  | { type: 'open-multiplayer' }
   | { type: 'set-quality'; quality: QualityLevel }
   | { type: 'set-camera'; mode: CameraMode }
   | { type: 'cycle-camera' }

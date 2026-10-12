@@ -479,44 +479,9 @@ export const createTextures = async (d: Disposer, pal: ThemePalette, size: numbe
 
   /* ── crowd atlas: 4 x 2 silhouettes, body white (tinted per instance), skin head ── */
   const crowdMap = (() => {
-    const [c, ctx] = canvas(512, 256);
-    ctx.clearRect(0, 0, 512, 256);
-    const skins = ['#f1c7a3', '#d9a173', '#a76b41', '#6b4227', '#f3d2b5', '#c98a5c', '#8b5a34', '#e8b892'];
-    for (let i = 0; i < 8; i++) {
-      const ox = (i % 4) * 128;
-      const oy = Math.floor(i / 4) * 128;
-      const cx = ox + 64;
-      const armsUp = i % 3 === 0;
-      const wide = 26 + (i % 4) * 4;
-      // legs
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(cx - wide * 0.45, oy + 84, wide * 0.38, 40);
-      ctx.fillRect(cx + wide * 0.07, oy + 84, wide * 0.38, 40);
-      // torso
-      ctx.beginPath();
-      ctx.roundRect(cx - wide / 2, oy + 42, wide, 48, 8);
-      ctx.fill();
-      // arms
-      if (armsUp) {
-        ctx.fillRect(cx - wide / 2 - 10, oy + 8, 9, 50);
-        ctx.fillRect(cx + wide / 2 + 1, oy + 8, 9, 50);
-      } else {
-        ctx.fillRect(cx - wide / 2 - 9, oy + 46, 8, 40);
-        ctx.fillRect(cx + wide / 2 + 1, oy + 46, 8, 40);
-      }
-      // head (skin)
-      ctx.fillStyle = skins[i];
-      ctx.beginPath();
-      ctx.arc(cx, oy + 26, 13, 0, Math.PI * 2);
-      ctx.fill();
-      // hair / cap
-      ctx.fillStyle = i % 2 ? '#2a1c12' : '#c33';
-      ctx.beginPath();
-      ctx.arc(cx, oy + 22, 13, Math.PI, Math.PI * 2);
-      ctx.fill();
-    }
-    const t = finish(d, c, { repeat: false, aniso: 4 });
-    return t;
+    // Spectators are removed; keep a tiny placeholder so the material still has a map.
+    const [c] = canvas(4, 4);
+    return finish(d, c, { repeat: false, aniso: 1 });
   })();
 
   /* ── trees ── */

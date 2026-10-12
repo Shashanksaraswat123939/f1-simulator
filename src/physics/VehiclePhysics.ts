@@ -70,6 +70,7 @@ export class VehiclePhysics implements IVehiclePhysics {
       const team = world.teamById[e.teamId] ?? world.teams[0];
       const driver = world.driverById[e.driverId] ?? world.drivers[0];
       const car = new PhysCar(st, team, driver, DEFAULT_ASSISTS);
+      car.noDamage = !world.config.damage;
       const equal = !!world.config.equalCars;
       car.aeroFactor = equal ? 1 : 1 - AERO.aeroPerfSlope * (1 - team.performance.aero);
       car.powerFactor = equal ? 1 : 1 - ENGINE.powerPerfSlope * (1 - team.performance.power);

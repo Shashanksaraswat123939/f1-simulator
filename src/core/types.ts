@@ -176,6 +176,8 @@ export interface SessionConfig {
   equalCars?: boolean;
   /** 0 off, 1 normal, 2 frequent, 3 chaos: how often random VSC, safety cars, yellows, failures and rain changes happen. */
   eventLevel?: number;
+  /** Cars can be damaged by impacts. Off (unbreakable) by default. */
+  damage?: boolean;
   /** Online race: every client shares the seed and the grid order; remote players' cars follow network updates. */
   mp?: { seed: number; selfPeerId: string; players: { peerId: string; driverId: string }[] };
 }
@@ -745,6 +747,8 @@ export interface IInputSystem {
   setErsMode(mode: ErsMode): void;
   /** Optional: player car speed (m/s) so keyboard steering rate can be speed-sensitive. main calls this every frame. */
   setSpeedHint?(speedMs: number): void;
+  /** Boost charge 0..1 (on-screen boost ring). */
+  setBoostLevel?(v: number): void;
   dispose(): void;
 }
 

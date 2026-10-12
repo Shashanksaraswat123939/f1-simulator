@@ -1116,7 +1116,7 @@ export class RaceDirector implements IRaceDirector {
   private maybeRandomFailure(rec: CarRecord, car: CarState, now: number): void {
     const race = this.state!;
     const sw = this.sw!;
-    if (!sw.config.randomEvents || sw.config.mp || car.isPlayer || race.phase !== 'racing') return;
+    if (!sw.config.randomEvents || !sw.config.damage || sw.config.mp || car.isPlayer || race.phase !== 'racing') return;
     const e = rec.entry;
     if (e.lapsCompleted < 1 || race.totalLaps - e.lapsCompleted < 1) return;
     const team = sw.teamById[e.teamId];

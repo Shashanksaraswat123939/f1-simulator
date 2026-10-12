@@ -160,7 +160,8 @@ export const buildGrandstands = async (ctx: BuildCtx): Promise<CrowdResult> => {
     }
 
     // crowd on every tread
-    const density = densityBase;
+    // No spectators: the stands stay empty (saves memory and keeps the picture clean).
+    const density = 0 * densityBase;
     for (let r = 0; r < T; r++) {
       const lat = r * tread + 0.42;
       const h = baseH + r * riser;

@@ -826,4 +826,101 @@ export const CSS = /* css */ `
 .af-mfd-tab.on{border-bottom-color:var(--red)}
 .af-mfd-row{border-radius:var(--r)}
 .af-mfd-row.focus{border-left-color:transparent;box-shadow:inset 3px 0 0 var(--red)}
+
+/* ═══════════════════════════ FLOATING HUD ═══════════════════════════
+   No boxes: everything floats over the picture as text with a soft shadow. */
+.af-hud{text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.55)}
+.af-hud .af-tower-head,.af-hud .af-tower-divider{display:none}
+.af-hud .af-tower{top:2.4vh;left:1.2vw;width:12.5em;font-size:clamp(9px,.7vw,18px);--row:clamp(15px,2.15vh,28px)}
+.af-hud .af-trow,.af-hud .af-trow.player{background:none;border:0;box-shadow:none}
+.af-hud .af-trow.player{background:linear-gradient(90deg,rgba(255,255,255,.18),transparent)}
+.af-hud .af-trow.blue{box-shadow:none}
+.af-hud .af-tfl,.af-hud .af-tage,.af-hud .af-tarrow{display:none}
+.af-hud .af-ttag{background:none;color:#fff;font-size:.55em}
+.af-hud .af-ttag.pit{background:none;color:#fff}
+.af-hud .af-ttag.drs-open{background:none;color:var(--green)}
+
+/* minimap: only the track and the dots */
+.af-hud .af-minimap{background:none;border:0;padding:0;height:17vh;border-radius:0}
+.af-hud .af-minimap .af-trackmap{inset:0;width:100%;height:100%;filter:drop-shadow(0 1px 4px rgba(0,0,0,.85))}
+.af-hud .af-tm-base{stroke:rgba(0,0,0,.45)}
+.af-hud .af-tm-glow{stroke:rgba(0,0,0,.25)}
+.af-hud .af-rightcol{top:2.4vh;right:1.2vw;width:13em}
+.af-hud .af-weather{background:none;border:0;padding:0 .2em;text-align:right}
+.af-hud .af-weather-rows,.af-hud .af-weather-ico{display:none}
+.af-hud .af-weather-head{justify-content:flex-end;margin:0}
+.af-hud .af-weather-clock{font-size:1em;font-weight:600;color:rgba(255,255,255,.8)}
+
+/* race control: one centred line of text */
+.af-hud .af-ticker{position:fixed;left:50%;top:9.5vh;transform:translateX(-50%);width:60vw;background:none;border:0;padding:0;text-align:center;pointer-events:none}
+.af-hud .af-ticker-head{display:none}
+.af-hud .af-ticker-row{display:none;justify-content:center;border:0;padding:0;font-size:1.15em}
+.af-hud .af-ticker-row:nth-child(2){display:flex}
+.af-hud .af-ticker-time{display:none}
+.af-hud .af-ticker-text{flex:none;font-weight:700;letter-spacing:.14em}
+.af-hud .af-toasts{align-items:flex-end}
+.af-hud .af-toast{background:none;border:0;border-left:0;padding:.1em 0;justify-content:flex-end}
+.af-hud .af-lapbox::before{display:none}
+.af-hud .af-lapbox{font-size:clamp(11px,.95vw,24px);padding:0;color:rgba(255,255,255,.9)}
+.af-hud .af-lights{background:none;border:0;padding:0;box-shadow:none}
+.af-hud .af-banner{background:none!important;clip-path:none;height:auto;left:10vw;right:10vw;top:12vh;color:#fff;font-size:clamp(14px,1.8vw,40px);letter-spacing:.2em;animation:none}
+.af-hud .af-banner.yellow{color:var(--yellow)}
+.af-hud .af-banner.red{color:#ff4b4b}
+.af-hud .af-banner.blue{color:#6fa8ff}
+.af-hud .af-banner.sc{color:#ffa93a}
+.af-hud .af-banner.chequered{color:#fff}
+.af-hud .af-banner.chequered .af-banner-text,.af-hud .af-banner.chequered .af-banner-sub,.af-hud .af-banner.bw .af-banner-text{background:none;padding:0}
+.af-hud .af-popup::before{display:none}
+.af-hud .af-popup{padding:0}
+
+/* lap + position: small text bottom-left */
+.af-hud .af-hud-left{left:1.2vw;bottom:2.4vh;width:12em}
+.af-hud .af-lap{background:none;border:0;padding:0}
+.af-hud .af-sectors,.af-hud .af-delta{display:none}
+.af-hud .af-posbadge::before{display:none}
+.af-hud .af-posbadge{padding:0}
+.af-hud .af-pos-v{color:#fff;font-size:1.8em}
+.af-hud .af-pos-change{color:#fff}
+
+/* dash: speed, tiny tyres, DRS/limiter and a boost bar. No gear, fuel, damage, g-force, steering, rev lights. */
+.af-hud .af-dash{right:1.6vw;bottom:2.4vh;width:14em;align-items:flex-end;font-size:clamp(10px,.8vw,20px)}
+.af-hud .af-gearbox,.af-hud .af-damage,.af-hud .af-fuel,.af-hud .af-gforce,.af-hud .af-steer,.af-hud .af-rpm,.af-hud .af-pedals,.af-hud .af-mini-k,.af-hud .af-tyre-age{display:none}
+.af-hud .af-speedbox{background:none;border:0;padding:0;align-items:flex-end}
+.af-hud .af-speed{font-size:3.6em;font-weight:700}
+.af-hud .af-dash-top{order:3;gap:.8em;justify-content:flex-end;align-items:center}
+.af-hud .af-ers{background:none;border:0;padding:0;width:7em;flex:none}
+.af-hud .af-ers-mode,.af-hud .af-ers-pct{display:none}
+.af-hud .af-ers-head{margin:0 0 .2em}
+.af-hud .af-ers-bar{height:.25em;background:rgba(255,255,255,.25)}
+.af-hud .af-drs,.af-hud .af-limiter{background:none;border:0;padding:0;font-size:.85em;color:rgba(255,255,255,.35)}
+.af-hud .af-drs[data-state=open]{background:none;color:var(--green)}
+.af-hud .af-drs[data-state=avail]{background:none;color:#fff}
+.af-hud .af-limiter.on{background:none;color:#fff;animation:none}
+.af-hud .af-dash-mid{order:1;justify-content:flex-end}
+.af-hud .af-dash-bot{order:2;justify-content:flex-end}
+.af-hud .af-tyres{background:none;border:0;padding:0;flex-direction:row;align-items:center;gap:.5em;transform-origin:right center;transform:scale(.62)}
+.af-hud .af-dash-right{display:none}
+.af-hud .af-tyre-rect{background:rgba(0,0,0,.35)}
+.af-hud .af-radio{background:none;border:0;box-shadow:none}
+.af-hud .af-tele{background:none}
+.af-hud .af-mfd{background:rgba(12,13,17,.88);text-shadow:none}
+
+/* ═══════════════════════════ TOUCH / PHONE LAYOUT ═══════════════════════════ */
+html.touch .af{font-size:clamp(12px,2.5vmin,20px)}
+html.touch .af-btn{padding:1em 2em;font-size:1.05em}
+html.touch .af-row{padding:.8em 1em}
+html.touch .af-mainitem{padding:1em 1.4em}
+html.touch .af-hud .af-tower{font-size:clamp(8px,1.9vmin,12px);--row:clamp(12px,3vmin,17px);top:1.5vh;left:1vw}
+html.touch .af-hud .af-hud-left,html.touch .af-hud .af-gamepad{display:none}
+html.touch .af-hud .af-rightcol{top:calc(env(safe-area-inset-top) + 12vmin);right:1.2vw;width:9em;font-size:clamp(8px,1.9vmin,12px)}
+html.touch .af-hud .af-minimap{height:22vmin}
+html.touch .af-hud .af-dash{left:50%;right:auto;transform:translateX(-50%);bottom:2vh;width:12em;align-items:center}
+html.touch .af-hud .af-dash-mid,html.touch .af-hud .af-dash-bot,html.touch .af-hud .af-dash-top{justify-content:center}
+html.touch .af-hud .af-speed{font-size:3em}
+html.touch .af-hud .af-tyres{transform-origin:center;transform:scale(.55)}
+html.touch .af-hud .af-ers{width:6em}
+html.touch .af-hud .af-lapbox{font-size:clamp(10px,2.3vmin,15px)}
+html.touch .af-hud .af-banner{top:25vh;font-size:clamp(12px,3vmin,22px)}
+html.touch .af-hud .af-ticker{top:31vh;font-size:.85em}
+html.touch #fs-toggle{display:none!important}
 `;

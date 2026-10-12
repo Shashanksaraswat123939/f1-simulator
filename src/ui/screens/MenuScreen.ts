@@ -420,6 +420,19 @@ export class MenuScreen implements Screen {
     rows.push(
       buildRow(
         {
+          label: 'CAR DAMAGE',
+          kind: 'toggle',
+          value: () => (L.damage ? 'ON' : 'OFF'),
+          adjust: () => (L.damage = !L.damage),
+          disabled: isTT,
+          hint: 'Off: cars are unbreakable. On: crashes break wings and suspension (repair in the pits).',
+        },
+        save,
+      ),
+    );
+    rows.push(
+      buildRow(
+        {
           label: 'EVENT FREQUENCY',
           kind: 'select',
           value: () => ['OFF', 'NORMAL', 'FREQUENT', 'CHAOS'][L.eventLevel] ?? 'NORMAL',
@@ -516,6 +529,7 @@ export class MenuScreen implements Screen {
       gridOrder: this.mode === 'grand-prix' ? 'qualifying' : GRID_ORDERS.includes(L.gridOrder) ? L.gridOrder : 'performance',
       randomEvents: tt ? false : L.eventLevel > 0,
       eventLevel: tt ? 0 : L.eventLevel,
+      damage: tt ? false : L.damage,
     };
     this.ctx.sound('start');
     this.ctx.emit({ type: 'start-session', config });
@@ -563,11 +577,9 @@ export class MenuScreen implements Screen {
         ['S / ↓', 'Brake'],
         ['A / ←', 'Steer left'],
         ['D / →', 'Steer right'],
-        ['E / SHIFT', 'Shift up'],
-        ['Q / CTRL', 'Shift down'],
         ['SPACE', 'DRS (hold)'],
-        ['R', 'ERS overtake (hold)'],
-        ['V', 'Cycle ERS mode'],
+        ['R', 'Boost (hold)'],
+        ['V', 'Boost mode'],
         ['L', 'Pit limiter'],
         ['P', 'Request pit stop'],
         ['TAB', 'MFD toggle'],
@@ -588,10 +600,10 @@ export class MenuScreen implements Screen {
         ['LEFT STICK', 'Steer'],
         ['RT', 'Throttle'],
         ['LT', 'Brake'],
-        ['A', 'Shift up · Confirm'],
-        ['B', 'Shift down · Back'],
+        ['A', 'Confirm'],
+        ['B', 'Back'],
         ['X', 'DRS'],
-        ['Y', 'ERS overtake'],
+        ['Y', 'Boost'],
         ['LB', 'Look back'],
         ['RB', 'Cycle camera'],
         ['D-PAD', 'MFD / menu navigation'],

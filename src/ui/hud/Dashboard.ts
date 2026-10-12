@@ -68,7 +68,7 @@ export class Dashboard {
     const top = div('af-dash-top');
     this.ersBox = div('af-ers');
     const ersHead = div('af-ers-head');
-    ersHead.append(span('af-ers-k', 'ERS'), (this.ersMode = span('af-ers-mode', 'BALANCED')), (this.ersPct = span('af-ers-pct', '100%')));
+    ersHead.append(span('af-ers-k', 'BOOST'), (this.ersMode = span('af-ers-mode', 'BALANCED')), (this.ersPct = span('af-ers-pct', '100%')));
     const ersBar = div('af-ers-bar');
     this.ersFill = div('af-ers-fill');
     ersBar.appendChild(this.ersFill);

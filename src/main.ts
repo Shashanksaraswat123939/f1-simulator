@@ -736,6 +736,7 @@ class Game {
     if (world) {
       world.realTime += rawDt;
       this.input.setSpeedHint?.(world.cars[world.playerCarId]?.speedAbs ?? 0);
+      this.input.setBoostLevel?.(world.cars[world.playerCarId]?.ers.battery ?? 0);
     }
     this.input.update(rawDt);
     for (const cmd of this.input.consumeCommands()) this.handleInputCommand(cmd);

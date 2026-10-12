@@ -33,6 +33,7 @@ type DamagePart = 'frontWing' | 'rearWing' | 'floor' | 'suspension';
 
 /** Apply impact damage from an impulse (N·s) at a contact point given in the car's local frame (x left, z forward). */
 export function applyImpactDamage(car: PhysCar, impulse: number, localX: number, localZ: number): void {
+  if (car.noDamage) return;
   const st = car.state;
   const dv = impulse * car.invMass;
   const amount = clamp01((dv - COLLISION.damageMinDv) / (COLLISION.damageFullDv - COLLISION.damageMinDv));

@@ -61,6 +61,8 @@ export class PhysCar {
   /** Retired and stopped: permanently ghosted and frozen. */
   parked = false;
   frozen = false;
+  /** Unbreakable mode: impacts do no damage. */
+  noDamage = true;
   /** Driven by a remote player: not simulated here, pose comes from the network. */
   remote = false;
   remoteGear = 1;

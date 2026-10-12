@@ -187,6 +187,11 @@ export class InputSystem implements IInputSystem, PadButtonListener {
     return clamp(Math.abs(kb) >= Math.abs(pad) ? kb : pad, -1, 1);
   }
 
+  /** Boost charge 0..1 for the on-screen boost ring. */
+  setBoostLevel(v: number): void {
+    this.touch?.setBoostLevel(v);
+  }
+
   setErsMode(mode: ErsMode): void {
     this.ersBase = mode;
     this.touch?.setErsLabel(mode);
@@ -220,12 +225,10 @@ export class InputSystem implements IInputSystem, PadButtonListener {
     const driving = this.drivingEnabled;
     switch (button) {
       case PAD.A:
-        if (driving) this.gearUpQueue++;
-        else this.push({ type: 'menu-confirm' });
+        if (!driving) this.push({ type: 'menu-confirm' });
         break;
       case PAD.B:
-        if (driving) this.gearDownQueue++;
-        else this.push({ type: 'menu-back' });
+        if (!driving) this.push({ type: 'menu-back' });
         break;
       case PAD.LB:
         this.lookBackPad = true;
@@ -281,16 +284,6 @@ export class InputSystem implements IInputSystem, PadButtonListener {
     if (e.repeat) return;
 
     switch (code) {
-      case 'KeyE':
-      case 'ShiftLeft':
-      case 'ShiftRight':
-        if (driving) this.gearUpQueue++;
-        break;
-      case 'KeyQ':
-      case 'ControlLeft':
-      case 'ControlRight':
-        if (driving) this.gearDownQueue++;
-        break;
       case 'Backspace':
         if (driving) this.resetQueue++;
         break;

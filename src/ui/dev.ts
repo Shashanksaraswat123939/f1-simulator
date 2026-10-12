@@ -73,6 +73,7 @@ const config: SessionConfig = {
   gridOrder: 'performance',
   randomEvents: true,
   eventLevel: 2,
+  damage: false,
 };
 
 const cars = DRIVERS.map((d, i) => {

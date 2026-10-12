@@ -10,7 +10,7 @@ import { buildAssistRows, type Row } from '../widgets';
 
 export type MfdPage = 'tyres' | 'ers' | 'assists' | 'camera' | 'info';
 const PAGES: MfdPage[] = ['tyres', 'ers', 'assists', 'camera', 'info'];
-const PAGE_LABEL: Record<MfdPage, string> = { tyres: 'TYRES', ers: 'ERS', assists: 'ASSISTS', camera: 'CAMERA', info: 'INFO' };
+const PAGE_LABEL: Record<MfdPage, string> = { tyres: 'TYRES', ers: 'BOOST', assists: 'ASSISTS', camera: 'CAMERA', info: 'INFO' };
 const ERS_MODES: ErsMode[] = ['harvest', 'balanced', 'overtake'];
 const ERS_DESC: Record<ErsMode, string> = { harvest: 'Recharge under braking · less deployment', balanced: 'Even deploy / harvest per lap', overtake: 'Full deployment · drains the battery' };
 

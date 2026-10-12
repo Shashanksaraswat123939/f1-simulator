@@ -18,6 +18,7 @@ export interface LastConfig {
   startingCompound: TyreCompound;
   randomEvents: boolean;
   eventLevel: number;
+  damage: boolean;
 }
 
 export const CAMERA_MODES: CameraMode[] = ['chase', 'chase-far', 'tcam', 'cockpit', 'nose', 'tv', 'helicopter'];
@@ -60,6 +61,7 @@ export const defaultLastConfig = (): LastConfig => ({
   startingCompound: 'medium',
   randomEvents: true,
   eventLevel: 2,
+  damage: false,
 });
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
@@ -136,6 +138,7 @@ export function loadLastConfig(): LastConfig {
     startingCompound: oneOf(v.startingCompound, TYRE_COMPOUNDS, d.startingCompound),
     randomEvents: bool(v.randomEvents, d.randomEvents),
     eventLevel: Math.round(num(v.eventLevel, 0, 3, d.eventLevel)),
+    damage: bool(v.damage, d.damage),
   };
 }
 
